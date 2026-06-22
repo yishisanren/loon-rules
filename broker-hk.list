@@ -1,0 +1,17 @@
+# 富途 & 老虎证券 — 香港时延优选
+# Futu (富途/moomoo/futubull) + Tiger Brokers (老虎证券)
+# Updated: 2026-06-23
+# Maintainer: yishisanren
+
+# ===== 富途 Futu =====
+DOMAIN-SUFFIX,futunn.com
+DOMAIN-SUFFIX,moomoo.com
+DOMAIN-SUFFIX,futuhk.com
+DOMAIN-SUFFIX,futustatic.com
+DOMAIN-SUFFIX,futuhn.com
+DOMAIN-SUFFIX,futufin.com
+
+# ===== 老虎证券 Tiger Brokers =====
+DOMAIN-SUFFIX,laohu8.com
+DOMAIN-SUFFIX,tigerfintech.com
+DOMAIN-SUFFIX,skytigris.cn
