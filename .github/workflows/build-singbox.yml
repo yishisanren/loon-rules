@@ -1,0 +1,48 @@
+name: Build sing-box rule-sets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.list"
+      - "scripts/loon2singbox.py"
+      - ".github/workflows/build-singbox.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-singbox
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Convert .list -> sing-box source JSON
+        run: |
+          mkdir -p srs
+          shopt -s nullglob
+          for f in *.list; do
+            name="${f%.list}"
+            python scripts/loon2singbox.py "$f" "srs/${name}.json"
+          done
+
+      - name: Commit generated rule-sets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add srs/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "ci: rebuild sing-box rule-sets from .list"
+            git push
+          fi
