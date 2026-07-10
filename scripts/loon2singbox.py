@@ -1,14 +1,31 @@
 #!/usr/bin/env python3
 """Convert a Loon/Surge/Clash-style .list rule file into a sing-box
-source rule-set (.json, version 2).
+rule-set: a source .json AND a compiled binary .srs.
 
-Usage: loon2singbox.py <input.list> <output.json>
+Usage: loon2singbox.py <input.list> <output.json> [output.srs]
+
+Output format notes
+-------------------
+- The source JSON is emitted as **version 1**. Rule-set schema version 1
+  already covers every matcher this converter produces (domain /
+  domain_suffix / domain_keyword / domain_regex / ip_cidr), and v1 is the
+  most widely compatible: older sing-box cores embedded in clients like
+  **NekoBox / NekoRay** reject the newer SRS binary v2/v3 produced from a
+  version 2/3 source, but accept v1. Emitting v1 keeps the generated
+  ``.srs`` loadable on those older cores while remaining fully valid for
+  current sing-box.
+- When an output .srs path is given (or ``sing-box`` is on PATH), the
+  script also compiles the source JSON to a binary ``.srs`` so clients
+  that want the binary "remote / binary" ruleset form can subscribe to it.
 
 Each matcher type is emitted as its own rule object so the rule-set
 matches with OR semantics across types (sing-box AND-combines different
 fields within a single rule object).
 """
 import json
+import os
+import shutil
+import subprocess
 import sys
 
 # Loon rule type -> sing-box source rule-set field
@@ -24,7 +41,7 @@ TYPE_MAP = {
 FIELD_ORDER = ["domain", "domain_suffix", "domain_keyword", "domain_regex", "ip_cidr"]
 
 
-def convert(in_path, out_path):
+def convert(in_path, out_path, srs_path=None):
     buckets = {f: [] for f in FIELD_ORDER}
     seen = {f: set() for f in FIELD_ORDER}
     skipped = []
@@ -52,7 +69,8 @@ def convert(in_path, out_path):
         if buckets[field]:
             rules.append({field: buckets[field]})
 
-    out = {"version": 2, "rules": rules}
+    # version 1: widest client compatibility (see module docstring).
+    out = {"version": 1, "rules": rules}
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, indent=2)
         fh.write("\n")
@@ -64,9 +82,26 @@ def convert(in_path, out_path):
         for s in skipped:
             print(f"    {s}", file=sys.stderr)
 
+    # Optionally compile to a binary .srs for clients that subscribe to the
+    # binary ruleset form (NekoBox "remote / binary", etc.).
+    if srs_path is None:
+        # Default: sibling <name>.srs next to the json, only if sing-box exists.
+        if shutil.which("sing-box"):
+            srs_path = os.path.splitext(out_path)[0] + ".srs"
+    if srs_path:
+        sb = shutil.which("sing-box") or "sing-box"
+        try:
+            subprocess.run(
+                [sb, "rule-set", "compile", "--output", srs_path, out_path],
+                check=True,
+            )
+            print(f"  compiled -> {srs_path} (SRS binary v1)")
+        except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+            print(f"  skipped .srs compile ({exc})", file=sys.stderr)
+
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         print(__doc__)
         sys.exit(1)
-    convert(sys.argv[1], sys.argv[2])
+    convert(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else None)
