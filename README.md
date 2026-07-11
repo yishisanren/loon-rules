@@ -1,5 +1,11 @@
 # loon-rules
 
+> ⚠️ **本仓库已整合进 [`proxy-rulesets`](https://github.com/yishisanren/proxy-rulesets)（统一规则集仓库）。**
+> 本仓库仍保留、旧订阅地址继续可用，但**不再更新**。新订阅请用：
+> - Loon 原生：`…/proxy-rulesets/main/broker/broker-hk.list`
+> - NekoBox/sing-box：`…/proxy-rulesets/main/broker/broker-hk.srs`（或 `.json`）
+> 完整地址表见新仓库 README。
+
 个人维护的 Loon 远程规则集。
 
 ## broker-hk.list
